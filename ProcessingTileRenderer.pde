@@ -5,12 +5,14 @@
 
 // Settings
 
-int NumOfThreads = 1;
+boolean UseFullScreen = true;
 
-int Width = 1024;
-int Height = 1024;
+int Width = 512;
+int Height = 512;
 
-int TextureSize = 4;
+int Zoom = 2;
+
+int NumOfThreads = 5;
 
 
 
@@ -21,28 +23,35 @@ int TextureSize = 4;
 int[][] Map;
 PImage[] Textures;
 
-int Zoom = 8;
+int TextureSize = 4; // 16x16 (2^4=16)
 
-TileRenderer TR = new TileRenderer (Map, Textures, TextureSize, NumOfThreads); // Having Map and Textures in here is kinda useless sense they're null
+TileRenderer TR;
 
 
 
 
 
 void setup() {
-  Textures = Loader.GetTextures();
-  RenderingData.Textures = Textures;
-  Map = new int [Width / TextureSize] [Height / TextureSize];
-  RenderingData.Map = Map;
-  RenderingData.XStart = 0;
-  RenderingData.YStart = 0;
-  RenderingData.Width = width;
-  RenderingData.Height = height;
-  RenderingData.PixelsWidth = width;
+  frameRate (60);
 }
 
+
+
 void settings() {
-  size (Width, Height);
+  
+  if (UseFullScreen) {
+    fullScreen();
+    width = 1920;
+    height = 1080;
+  } else {
+    size (Width, Height);
+  }
+  
+  Textures = Loader.GetTextures();
+  Map = new int [width / TextureSize] [height / TextureSize];
+  
+  TR = new TileRenderer (Map, Textures, TextureSize, NumOfThreads, width, 0, 0, width, height);
+  
 }
 
 
@@ -50,13 +59,11 @@ void settings() {
 
 
 void draw() {
+  
   RenderingData.Zoom = Zoom;
-  loadPixels();
-  RenderingData.Pixels = pixels;
   TR.Render();
-  updatePixels();
+  
   if (mousePressed) {
-    RenderingData.Map [mouseX/8] [mouseY/8] = 1;
+    RenderingData.Map [mouseX/16/Zoom] [mouseY/16/Zoom] = 1;
   }
-  println (RenderingData.Map [mouseX/8] [mouseY/8]);
 }
