@@ -4,6 +4,7 @@ public static class RenderingData {
   static int Zoom;
   static float CameraX;
   static float CameraY;
+  static int RenderTime;
   
   // mostly final
   static int[][] TileMap;
@@ -62,6 +63,7 @@ public class TileRenderer {
   
   
   public void Render (int[] Pixels) {
+    int StartMillis = millis();
     
     // set rendering data
     RenderingData.Pixels = Pixels;
@@ -75,6 +77,9 @@ public class TileRenderer {
     
     // wait for threads to finish
     while (RenderingData.FinishedThreads < RenderingData.NumOfThreads) DoBusyWork();
+    
+    // calc time taken
+    RenderingData.TimeTaken = millis() - StartMillis;
     
   }
   
@@ -128,6 +133,7 @@ void Threaded_RenderTiles() {
   float SubTileY = (CameraY % 1) + ((TileStepX * ThreadID) % 1);
   float CamTileY = TextureWidth * (CameraY % 1);
   int TextureY = (((int) CamTileY) + (ThreadID / Zoom)) % TextureWidth;
+  int TextureBitAnd = (1 << TextureSize) - 1;
   int SubTextureY = ((int) ((CamTileY % 1) * Zoom)) + (ThreadID % Zoom);
   
   // from top to bottom
@@ -140,7 +146,9 @@ void Threaded_RenderTiles() {
     int TextureX = (int) CamTileX;
     int SubTextureX = (int) ((CamTileX % 1) * Zoom);
     PImage CurrentTexture = TileSet [TileMap [TileX] [TileY]];
-    color CurrColor = CurrentTexture.pixels[TextureX + (TextureY << TextureSize)];
+    int TextureIndex = TextureX + (TextureY << TextureSize);
+    int IndexBitAnd = (1 << (TextureSize * 2)) - 1; // TextureWidth^2 - 1
+    color CurrColor = CurrentTexture.pixels[TextureIndex];
     int Index = ScreenXStart + (ScreenYStart + YPos) * PixelsWidth;
     
     // from left to right
@@ -154,9 +162,10 @@ void Threaded_RenderTiles() {
       SubTextureX ++;
       if (SubTextureX == Zoom) {
         TextureX ++;
-        TextureX %= TextureWidth;
+        TextureX &= TextureBitAnd;
         SubTextureX = 0;
-        CurrColor = CurrentTexture.pixels[TextureX + (TextureY << TextureSize)];
+        TextureIndex = (TextureIndex + 1) & IndexBitAnd;
+        CurrColor = CurrentTexture.pixels[TextureIndex];
       }
       
       // move within map
@@ -165,7 +174,8 @@ void Threaded_RenderTiles() {
         TileX += (int) SubTileX;
         SubTileX %= 1;
         CurrentTexture = TileSet [TileMap [TileX] [TileY]];
-        CurrColor = CurrentTexture.pixels[TextureX + (TextureY << TextureSize)];
+        TextureIndex = TextureX + (TextureY << TextureSize);
+        CurrColor = CurrentTexture.pixels[TextureIndex];
       }
       
     }
@@ -174,7 +184,7 @@ void Threaded_RenderTiles() {
     SubTextureY += NumOfThreads;
     if (SubTextureY >= Zoom) {
       TextureY += SubTextureY / Zoom;
-      TextureY %= TextureWidth;
+      TextureY &= TextureBitAnd;
       SubTextureY %= Zoom;
     }
     

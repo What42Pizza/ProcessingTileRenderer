@@ -13,6 +13,7 @@ Change log:
 
 Alpha 1.1.0: 05/12/21
 added scrolling
+added RendetingData.TimeTaken
 renamed many RenderingData vars
 removed old renderer function
 moved the loader class to the main file (w/ setup() & draw())
@@ -80,6 +81,7 @@ void settings() {
 
 
 
+int TotalTimeTaken = 0;
 
 void draw() {
   
@@ -89,6 +91,9 @@ void draw() {
   TR.Render();
   
   text (frameRate, 5, 15);
+  
+  TotalTimeTaken += RenderingData.RenderTime;
+  text ("average render time: " + (TotalTimeTaken / frameCount), 5, 30);
   
   if (mousePressed) {
     Map [mouseX/16/Zoom] [mouseY/16/Zoom] = 1; // works bc it's the same poiner as in RenderingData
