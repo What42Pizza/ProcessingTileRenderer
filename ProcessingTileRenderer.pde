@@ -1,4 +1,26 @@
 // Started 04/05/21
+// Last updated 04/12/21
+
+// Alpha 1.1.0
+
+
+
+
+
+/*
+
+Change log:
+
+Alpha 1.1.0: 05/12/21
+added scrolling
+renamed many RenderingData vars
+removed old renderer function
+moved the loader class to the main file (w/ setup() & draw())
+
+Alpha 1.0.0: 04/07/21
+finished first working renderer
+
+*/
 
 
 
@@ -7,12 +29,13 @@
 
 boolean UseFullScreen = true;
 
+// for non-fullscreen
 int Width = 512;
 int Height = 512;
 
 int Zoom = 2;
 
-int NumOfThreads = 5;
+int NumOfThreads = 8;
 
 
 
@@ -61,9 +84,44 @@ void settings() {
 void draw() {
   
   RenderingData.Zoom = Zoom;
+  RenderingData.CameraX = mouseX / 100.0;
+  RenderingData.CameraY = mouseY / 100.0;
   TR.Render();
   
+  text (frameRate, 5, 15);
+  
   if (mousePressed) {
-    RenderingData.Map [mouseX/16/Zoom] [mouseY/16/Zoom] = 1;
+    Map [mouseX/16/Zoom] [mouseY/16/Zoom] = 1; // works bc it's the same poiner as in RenderingData
   }
+  
+}
+
+
+
+
+
+
+
+
+
+
+Loader_Class Loader = new Loader_Class();
+
+public class Loader_Class {
+  
+  
+  
+  public PImage[] GetTextures() {
+    File TexturesFolder = new File (dataPath("") + "\\Textures");
+    String[] TextureNames = TexturesFolder.list();
+    PImage[] Out = new PImage [TextureNames.length];
+    for (int i = 0; i < Out.length; i ++) {
+      String Name = TextureNames[i];
+      Out[i] = loadImage (dataPath("") + "\\Textures\\" + Name);
+    }
+    return Out;
+  }
+  
+  
+  
 }

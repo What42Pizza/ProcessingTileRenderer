@@ -1,19 +1,21 @@
 public static class RenderingData {
   
+  // changes per frame
+  static int Zoom;
+  static float CameraX;
+  static float CameraY;
+  
   // mostly final
-  static int[][] Map;
-  static PImage[] Textures;
+  static int[][] TileMap;
+  static PImage[] TileSet;
   static int TextureSize;
+  static int ScreenXStart;
+  static int ScreenYStart;
+  static int ScreenWidth;
+  static int ScreenHeight;
   static int NumOfThreads;
   static int[] Pixels;
   static int PixelsWidth;
-  
-  // changes per frame
-  static int Zoom;
-  static int XStart;
-  static int YStart;
-  static int Width;
-  static int Height;
   
   // threading (don't change manually)
   static int CurrThreadID;
@@ -36,23 +38,23 @@ public class TileRenderer {
   
   public TileRenderer() {}
   
-  public TileRenderer (int[][] Map, PImage[] Textures, int TextureSize, int NumOfThreads) {
-    RenderingData.Map = Map;
-    RenderingData.Textures = Textures;
+  public TileRenderer (int[][] TileMap, PImage[] TileSet, int TextureSize, int NumOfThreads) {
+    RenderingData.TileMap = TileMap;
+    RenderingData.TileSet = TileSet;
     RenderingData.TextureSize = TextureSize;
     RenderingData.NumOfThreads = NumOfThreads;
   }
   
-  public TileRenderer (int[][] Map, PImage[] Textures, int TextureSize, int NumOfThreads, int PixelsWidth, int XStart, int YStart, int Width, int Height) {
-    RenderingData.Map = Map;
-    RenderingData.Textures = Textures;
+  public TileRenderer (int[][] TileMap, PImage[] TileSet, int TextureSize, int NumOfThreads, int PixelsWidth, int ScreenXStart, int ScreenYStart, int ScreenWidth, int ScreenHeight) {
+    RenderingData.TileMap = TileMap;
+    RenderingData.TileSet = TileSet;
     RenderingData.TextureSize = TextureSize;
     RenderingData.NumOfThreads = NumOfThreads;
     RenderingData.PixelsWidth = PixelsWidth;
-    RenderingData.XStart = XStart;
-    RenderingData.YStart = YStart;
-    RenderingData.Width = Width;
-    RenderingData.Height = Height;
+    RenderingData.ScreenXStart = ScreenXStart;
+    RenderingData.ScreenYStart = ScreenYStart;
+    RenderingData.ScreenWidth = ScreenWidth;
+    RenderingData.ScreenHeight = ScreenHeight;
   }
   
   
@@ -80,6 +82,7 @@ public class TileRenderer {
   
   public void Render () {
     loadPixels();
+    //pixels = new color [width * height];
     Render (pixels);
     updatePixels();
   }
@@ -96,19 +99,22 @@ void Threaded_RenderTiles() {
   
   int ThreadID = GetAndIncThreadID();
   
-  int[][] Map = RenderingData.Map;
-  PImage[] Textures = RenderingData.Textures;
+  int[][] TileMap = RenderingData.TileMap;
+  PImage[] TileSet = RenderingData.TileSet;
   int TextureSize = RenderingData.TextureSize;
   int TextureWidth = 1 << TextureSize;
   int NumOfThreads = RenderingData.NumOfThreads;
   int[] Pixels = RenderingData.Pixels;
   int PixelsWidth = RenderingData.PixelsWidth;
   
+  int ScreenXStart = RenderingData.ScreenXStart;
+  int ScreenYStart = RenderingData.ScreenYStart;
+  int ScreenWidth = RenderingData.ScreenWidth;
+  int ScreenHeight = RenderingData.ScreenHeight;
+  
   int Zoom = RenderingData.Zoom;
-  int XStart = RenderingData.XStart;
-  int YStart = RenderingData.YStart;
-  int Width = RenderingData.Width;
-  int Height = RenderingData.Height;
+  float CameraX = RenderingData.CameraX;
+  float CameraY = RenderingData.CameraY;
   
   float TileStepX = 1.0 / TextureWidth / Zoom;
   float TileStepY = TileStepX * NumOfThreads;
@@ -118,25 +124,27 @@ void Threaded_RenderTiles() {
   // Tile goes from 0 - 1 and Texture goes from 0 - TextureWidth
   
   // get vertical vars
-  int TileY = (int) (TileStepX * ThreadID);
-  float SubTileY = (TileStepX * ThreadID) % 1;
-  int TextureY = ThreadID / Zoom;
-  int SubTextureY = ThreadID % Zoom;
+  int TileY = ((int) CameraY) + ((int) (TileStepX * ThreadID));
+  float SubTileY = (CameraY % 1) + ((TileStepX * ThreadID) % 1);
+  float CamTileY = TextureWidth * (CameraY % 1);
+  int TextureY = (((int) CamTileY) + (ThreadID / Zoom)) % TextureWidth;
+  int SubTextureY = ((int) ((CamTileY % 1) * Zoom)) + (ThreadID % Zoom);
   
   // from top to bottom
-  for (int YPos = ThreadID; YPos < Height; YPos += NumOfThreads) {
+  for (int YPos = ThreadID; YPos < ScreenHeight; YPos += NumOfThreads) {
     
     // get horizontal vars
-    int TileX = 0;
-    float SubTileX = 0;
-    int TextureX = 0;
-    int SubTextureX = 0;
-    PImage CurrentTexture = Textures [Map [TileX] [TileY]];
+    int TileX = (int) CameraX;
+    float SubTileX = CameraX % 1;
+    float CamTileX = TextureWidth * SubTileX;
+    int TextureX = (int) CamTileX;
+    int SubTextureX = (int) ((CamTileX % 1) * Zoom);
+    PImage CurrentTexture = TileSet [TileMap [TileX] [TileY]];
     color CurrColor = CurrentTexture.pixels[TextureX + (TextureY << TextureSize)];
-    int Index = XStart + (YStart + YPos) * PixelsWidth;
+    int Index = ScreenXStart + (ScreenYStart + YPos) * PixelsWidth;
     
     // from left to right
-    for (int XPos = 0; XPos < Width; XPos ++) {
+    for (int XPos = 0; XPos < ScreenWidth; XPos ++) {
       
       // fill pixel w/ cached color
       Pixels[Index] = CurrColor;
@@ -156,7 +164,7 @@ void Threaded_RenderTiles() {
       if (SubTileX >= 1) {
         TileX += (int) SubTileX;
         SubTileX %= 1;
-        CurrentTexture = Textures [Map [TileX] [TileY]];
+        CurrentTexture = TileSet [TileMap [TileX] [TileY]];
         CurrColor = CurrentTexture.pixels[TextureX + (TextureY << TextureSize)];
       }
       
@@ -180,100 +188,6 @@ void Threaded_RenderTiles() {
   }
   
   // finish
-  IncFinishedThreads();
-  
-}
-
-
-
-
-
-// this has each thread jumps columns, the new one jumps rows
-void Threaded_RenderTiles_OLD() { // works with 1-2 threads (I think), but not any more
-  
-  int ThreadID = GetAndIncThreadID();
-  
-  int[][] Map = RenderingData.Map;
-  PImage[] Textures = RenderingData.Textures;
-  int TextureSize = RenderingData.TextureSize;
-  int TextureWidth = 1 << TextureSize;
-  int NumOfThreads = RenderingData.NumOfThreads;
-  int[] Pixels = RenderingData.Pixels;
-  int PixelsWidth = RenderingData.PixelsWidth;
-  
-  int Zoom = RenderingData.Zoom;
-  int XStart = RenderingData.XStart;
-  int YStart = RenderingData.YStart;
-  int Width = RenderingData.Width;
-  int Height = RenderingData.Height;
-  
-  float TileStepY = 1.0 / TextureWidth / Zoom;
-  float TileStepX = TileStepY * NumOfThreads;
-  
-  
-  
-  // get vertical vars
-  int TileY = 0;
-  float SubTileY = 0;
-  int TextureY = 0;
-  int SubTextureY = 0;
-  
-  // from top to bottom
-  for (int YPos = 0; YPos < Height; YPos ++) {
-    
-    // get horizontal vars
-    int TileX = (int) (TileStepX * ThreadID);
-    float SubTileX = (TileStepX * ThreadID) % 1;
-    int TextureX = ThreadID / Zoom;
-    int SubTextureX = ThreadID % Zoom;
-    int CurrentTile = Map [TileX] [TileY];
-    color CurrColor = Textures[CurrentTile].pixels[TextureX + (TextureY << TextureSize)];
-    int Index = XStart + (YStart + YPos) * PixelsWidth + ThreadID;
-    
-    // from left to right
-    for (int XPos = ThreadID; XPos < Width; XPos += NumOfThreads) {
-      
-      // fill pixel with cached color
-      Pixels[Index] = CurrColor;
-      Index += NumOfThreads;
-      
-      // check if pixel has changed
-      SubTextureX += NumOfThreads;
-      if (SubTextureX >= Zoom) {
-        TextureX += SubTextureX / Zoom;
-        TextureX %= TextureWidth;
-        SubTextureX %= Zoom;
-        CurrColor = Textures[CurrentTile].pixels[TextureX + (TextureY << TextureSize)];
-      }
-      
-      // check if tile has changed
-      SubTileX += TileStepX;
-      if (SubTileX >= 1) {
-        TileX += (int) SubTileX;
-        SubTileX %= 1;
-        CurrentTile = Map [TileX] [TileY];
-        //CurrColor = Textures[CurrentTile].pixels[TextureX + (TextureY << TextureSize)]; // not sure if this is needed, doesn't really help?
-      }
-      
-    }
-    
-    // check if pixel has changed
-    SubTextureY ++;
-    if (SubTextureY >= Zoom) {
-      SubTextureY = 0;
-      TextureY ++;
-      TextureY %= TextureWidth;
-    }
-    
-    // check if tile has changed
-    SubTileY += TileStepY;
-    if (SubTileY >= 1) {
-      TileY += (int) SubTileY;
-      SubTileY %= 1;
-    }
-    
-  }
-  
   IncFinishedThreads();
   
 }
