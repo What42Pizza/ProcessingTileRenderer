@@ -79,7 +79,7 @@ public class TileRenderer {
     while (RenderingData.FinishedThreads < RenderingData.NumOfThreads) DoBusyWork();
     
     // calc time taken
-    RenderingData.TimeTaken = millis() - StartMillis;
+    RenderingData.RenderTime = millis() - StartMillis;
     
   }
   

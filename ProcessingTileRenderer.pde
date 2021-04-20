@@ -1,7 +1,7 @@
 // Started 04/05/21
 // Last updated 04/12/21
 
-// Alpha 1.1.0
+// Alpha 1.1.1
 
 
 
@@ -11,7 +11,10 @@
 
 Change log:
 
-Alpha 1.1.0: 05/12/21
+Alpha 1.1.1: 04/20/21
+fixed var name error
+
+Alpha 1.1.0: 04/12/21
 added scrolling
 added RendetingData.TimeTaken
 renamed many RenderingData vars
