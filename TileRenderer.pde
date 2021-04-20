@@ -86,8 +86,9 @@ public class TileRenderer {
   
   
   public void Render () {
-    loadPixels();
-    //pixels = new color [width * height];
+    //loadPixels();
+    pixels = new color [width * height];
+    g.pixels = pixels;
     Render (pixels);
     updatePixels();
   }

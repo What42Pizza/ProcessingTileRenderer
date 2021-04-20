@@ -1,7 +1,7 @@
 // Started 04/05/21
 // Last updated 04/12/21
 
-// Alpha 1.1.1
+// Alpha 1.2.0
 
 
 
@@ -11,7 +11,8 @@
 
 Change log:
 
-Alpha 1.1.1: 04/20/21
+Alpha 1.2.0: 04/20/21
+bypassed loadPixels()
 fixed var name error
 
 Alpha 1.1.0: 04/12/21
